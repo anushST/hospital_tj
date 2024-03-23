@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
+    'our_service.apps.OurServiceConfig',
     'rest_framework',
     'djoser',
 ]
