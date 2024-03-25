@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
+    'our_service.apps.OurServiceConfig',
     'rest_framework',
     'djoser',
 ]
@@ -147,3 +148,5 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=3),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+MEDIA_ROOT = BASE_DIR / 'media'
