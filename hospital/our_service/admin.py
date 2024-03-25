@@ -1,3 +1,6 @@
+"""Register our_service models in admin_zone here."""
 from django.contrib import admin
 
-# Register your models here.
+from .models import Comment, Hospital, Rank, Service
+
+admin.site.register([Comment, Hospital, Rank, Service])
