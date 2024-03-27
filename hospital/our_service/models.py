@@ -2,6 +2,8 @@
 
 Models:
 
+    Category - Model for categories.
+
     Comment - Model for comments.
 
     Hospital - Model for hospitals.
@@ -25,22 +27,55 @@ PRICE_VALIDATORS: list = [
 MIN_MAX_PRICE_HELP_TEXT: str = 'If price is constant put 0.'
 
 
+class Category(models.Model):
+    """Category model.
+
+    Attributes:
+        title (CharField): The title of the category.
+        description (TextField): The description of the category.
+        slug (SlugField): The slug of the category.
+    """
+
+    title = models.CharField('Заголовок', max_length=64)
+    description = models.TextField()
+    slug = models.SlugField(
+        unique=True,
+        help_text='Identificator for the url.'
+    )
+
+    class Meta:
+        """Meta data of the HospitalServiceBaseModel class."""
+
+        verbose_name_plural = 'Categories'
+
+    def __str__(self) -> str:
+        """Return string to show when call str() method on current object."""
+        return self.title
+
+
 class HospitalServiceBaseModel(models.Model):
     """Hospital's and Service's base model.
 
     Attributes:
-        name (CharField): The name of the hospital.
-        description (TextField): The description of the hospital.
-        average_rank (FloatField): The hospitals's average rank
+        name (CharField): The name of the hospital|serv.
+        description (TextField): The description of the hospital|serv.
+        average_rank (FloatField): The hospitals's|serv average rank.
     (note: calculates automaticly).
+        category (ForeignKey(Category)): The hospital's|serv category.
     """
 
     name = models.CharField(max_length=64)
-    description = models.TextField(max_length=512)
+    description = models.TextField()
     average_rank = models.FloatField(default=0, editable=False, null=True)
+    category = models.ForeignKey(
+        Category,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
 
     class Meta:
-        """Meta data of the class."""
+        """Meta data of the HospitalServiceBaseModel class."""
 
         abstract = True
 
@@ -51,14 +86,20 @@ class Hospital(HospitalServiceBaseModel):
     Attributes:
         name (CharField): The name of the hospital.
         description (TextField): The description of the hospital.
+        slug (SlugField): The slug of the category.
         work_time (TextField): The work time of the hospital in format
     "Mon-Fri 8:00-22:00(a break 12:00-13:00), Sat 8:00-20:00(...), Sun Closed".
         small_imgae (ImageField): The image with resolution 450x600.
         big_imgage (ImageField): The image with resoulution 1920x1080.
         average_rank (FloatField): The hospitals's average rank
     (note: calculates automaticly).
+        category (ForeignKey(Category)): The hospital's category.
     """
 
+    slug = models.SlugField(
+        unique=True,
+        help_text='Identificator for the url.'
+    )
     work_time = models.TextField(
         max_length=256, help_text='Format: "Mon-Fri 8:00-22:00(a '
         'break 12:00-13:00), Sat 8:00-20:00(...), Sun Closed"')
@@ -86,6 +127,7 @@ class Service(HospitalServiceBaseModel):
         hospital (ForeignKey(Hospital)): Service's hospital.
         average_rank (FloatField): The service's average rank
     (note: calculates automaticly).
+        category (ForeignKey(Category)): The service's category.
     """
 
     price = models.FloatField(validators=PRICE_VALIDATORS,
@@ -104,7 +146,14 @@ class Service(HospitalServiceBaseModel):
         self,
         exclude: Union[Collection[str], None] = None
     ) -> None:
-        """Validate fields."""
+        """Validate fields.
+
+        Ovverided to check:
+            1. The fields price, min_price, max_price together can't be Null.
+            2. Choose one couple of fields: (price) or
+            (min_price and max_price).
+            3. max_price can't be less than min_price.
+        """
         super().clean_fields(exclude)
         if self.price == 0 and self.min_price == 0 and self.max_price == 0:
             raise ValidationError(
@@ -146,7 +195,12 @@ class CommentRankBaseModel(models.Model):
         self,
         exclude: Union[Collection[str], None] = None
     ) -> None:
-        """Validate fields."""
+        """Validate fields.
+
+        Ovverided to check:
+            1.service and hospital fields both can't be Null
+            2.one of fields: service, hospital have to be Null
+        """
         super().clean_fields(exclude)
         if self.service is None and self.hospital is None:
             raise ValidationError(
@@ -172,7 +226,6 @@ class CommentRankBaseModel(models.Model):
         """Meta data of the CommentRankBaseModel class."""
 
         abstract = True
-        ordering = ('updated_at',)
 
 
 class Comment(CommentRankBaseModel):
@@ -198,6 +251,11 @@ class Comment(CommentRankBaseModel):
         Hospital, on_delete=models.CASCADE,
         related_name='hospital_comment', null=True, blank=True,
         help_text='if service_field is not blank leave this field blank')
+
+    class Meta:
+        """Meta data of the Comment class."""
+
+        ordering = ('-updated_at',)
 
 
 class Rank(CommentRankBaseModel):
@@ -229,8 +287,28 @@ class Rank(CommentRankBaseModel):
         related_name='hospital_rank', null=True, blank=True,
         help_text='if service_field is not blank leave this field blank')
 
+    def clean_fields(
+        self,
+        exclude: Union[Collection[str], None] = None
+    ) -> None:
+        """Validate fields.
+
+        Ovverided to check uniqueness of fields (author, hospital) or
+        (author, service).
+        """
+        super().clean_fields(exclude)
+        try:
+            Rank.objects.get(author=self.author, service=self.service,
+                             hospital=self.hospital)
+            raise ValidationError('You already ranked.')
+        except Rank.DoesNotExist:
+            pass
+
     def save(self, *args, **kwargs) -> None:
-        """Save object to database."""
+        """Save object to database.
+
+        Ovverided for adding average rank.
+        """
         super().save(*args, **kwargs)
         if self.service is not None:
             all_ranks = Rank.objects.filter(service__id=self.service.id)
@@ -250,18 +328,8 @@ class Rank(CommentRankBaseModel):
             obj = Hospital.objects.get(id=self.hospital.id)
             obj.average_rank = average_rank
             obj.save()
-        super().save(*args, **kwargs)
 
     class Meta:
         """Meta data of the Rank class."""
 
-        constraints = (
-            models.UniqueConstraint(
-                name='unique_author_hospital',
-                fields=('author', 'hospital'),
-            ),
-            models.UniqueConstraint(
-                name='unique_author_service',
-                fields=('author', 'service'),
-            ),
-        )
+        ordering = ('-updated_at',)
