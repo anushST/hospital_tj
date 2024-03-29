@@ -36,8 +36,8 @@ class HospitalServiceBaseViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = super().get_queryset()
         if self.action == 'list':
             category_slug = self.request.query_params.get('category')
-            return (queryset.filter(category__slug=category_slug)
-                    if category_slug is not None else queryset)
+            if category_slug is not None:
+                return queryset.filter(category__slug=category_slug)
         return queryset
 
 
@@ -58,6 +58,18 @@ class ServiceViewSet(HospitalServiceBaseViewSet):
     serializer_class = ServiceSerializer
     filter_backends = (SearchFilter, PriceFilter)
     search_fields = ('name',)
+
+    def get_queryset(self):
+        """Get queryset for viewset.
+
+        Ovverided to check param 'hospital'.
+        """
+        queryset = super().get_queryset()
+        if self.action == 'list':
+            hospital_slug = self.request.query_params.get('hospital')
+            if hospital_slug is not None:
+                return queryset.filter(hospital__slug=hospital_slug)
+        return queryset
 
 
 class CommentRankBaseViewSet(viewsets.ModelViewSet):
