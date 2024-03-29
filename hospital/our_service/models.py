@@ -103,8 +103,12 @@ class Hospital(HospitalServiceBaseModel):
     work_time = models.TextField(
         max_length=256, help_text='Format: "Mon-Fri 8:00-22:00(a '
         'break 12:00-13:00), Sat 8:00-20:00(...), Sun Closed"')
-    small_image = models.ImageField(upload_to='hospital_images')
-    big_image = models.ImageField(upload_to='hospital_images')
+    small_image = models.ImageField(
+        upload_to='hospital_images', null=True,
+        default='hospital_images/default_mini_image.jpg')
+    big_image = models.ImageField(
+        upload_to='hospital_images', null=True,
+        default='hospital_images/default_big_image.jpg')
 
     def __str__(self) -> str:
         """Return string to show when call str() method on current object."""

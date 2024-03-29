@@ -25,7 +25,23 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
 
 
-class HospitalViewSet(viewsets.ReadOnlyModelViewSet):
+class HospitalServiceBaseViewSet(viewsets.ReadOnlyModelViewSet):
+    """Hospital and Service base viewset."""
+
+    def get_queryset(self):
+        """Get queryset for viewset.
+
+        Ovverided to check param 'category'
+        """
+        queryset = super().get_queryset()
+        if self.action == 'list':
+            category_slug = self.request.query_params.get('category')
+            return (queryset.filter(category__slug=category_slug)
+                    if category_slug is not None else queryset)
+        return queryset
+
+
+class HospitalViewSet(HospitalServiceBaseViewSet):
     """Hospital viewset."""
 
     queryset = Hospital.objects.all()
@@ -35,7 +51,7 @@ class HospitalViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
 
 
-class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
+class ServiceViewSet(HospitalServiceBaseViewSet):
     """Service viewset."""
 
     queryset = Service.objects.all()
