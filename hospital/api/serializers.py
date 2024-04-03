@@ -22,7 +22,7 @@ class HospitalSerializer(serializers.ModelSerializer):
 
         model = Hospital
         fields = ('name', 'description', 'slug', 'category', 'work_time',
-                  'average_rank', 'small_image', 'big_image',)
+                  'average_rank', 'small_image', 'big_image', 'is_on_main',)
 
 
 class ServiceSerializer(serializers.ModelSerializer):

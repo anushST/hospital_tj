@@ -61,18 +61,11 @@ class HospitalServiceBaseModel(models.Model):
         description (TextField): The description of the hospital|serv.
         average_rank (FloatField): The hospitals's|serv average rank.
     (note: calculates automaticly).
-        category (ForeignKey(Category)): The hospital's|serv category.
     """
 
     name = models.CharField(max_length=64)
     description = models.TextField()
     average_rank = models.FloatField(default=0, editable=False, null=True)
-    category = models.ForeignKey(
-        Category,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL
-    )
 
     class Meta:
         """Meta data of the HospitalServiceBaseModel class."""
@@ -109,6 +102,11 @@ class Hospital(HospitalServiceBaseModel):
     big_image = models.ImageField(
         upload_to='hospital_images', null=True,
         default='hospital_images/default_big_image.jpg')
+    category = models.ManyToManyField(
+        Category,
+        blank=True
+    )
+    is_on_main = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         """Return string to show when call str() method on current object."""
@@ -145,6 +143,12 @@ class Service(HospitalServiceBaseModel):
                                   default=0)
     hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE,
                                  related_name='hospital')
+    category = models.ForeignKey(
+        Category,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
 
     def clean_fields(
         self,

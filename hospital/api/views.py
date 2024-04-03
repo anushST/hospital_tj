@@ -28,14 +28,14 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 class HospitalServiceBaseViewSet(viewsets.ReadOnlyModelViewSet):
     """Hospital and Service base viewset."""
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Get queryset for viewset.
 
-        Ovverided to check param 'category'
+        Ovverided to handle param 'category'
         """
-        queryset = super().get_queryset()
+        queryset: QuerySet = super().get_queryset()
         if self.action == 'list':
-            category_slug = self.request.query_params.get('category')
+            category_slug: str = self.request.query_params.get('category')
             if category_slug is not None:
                 return queryset.filter(category__slug=category_slug)
         return queryset
@@ -50,6 +50,18 @@ class HospitalViewSet(HospitalServiceBaseViewSet):
     search_fields = ('name',)
     lookup_field = 'slug'
 
+    def get_queryset(self) -> QuerySet:
+        """Get queryset for viewset.
+
+        Ovverided to handle param is_on_main.
+        """
+        queryset: QuerySet = super().get_queryset()
+        if self.action == 'list':
+            is_on_main: str = self.request.query_params.get('is_on_main')
+            if is_on_main == 'True':
+                return queryset.filter(is_on_main=True)
+        return queryset
+
 
 class ServiceViewSet(HospitalServiceBaseViewSet):
     """Service viewset."""
@@ -59,14 +71,14 @@ class ServiceViewSet(HospitalServiceBaseViewSet):
     filter_backends = (SearchFilter, PriceFilter)
     search_fields = ('name',)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Get queryset for viewset.
 
         Ovverided to check param 'hospital'.
         """
-        queryset = super().get_queryset()
+        queryset: QuerySet = super().get_queryset()
         if self.action == 'list':
-            hospital_slug = self.request.query_params.get('hospital')
+            hospital_slug: str = self.request.query_params.get('hospital')
             if hospital_slug is not None:
                 return queryset.filter(hospital__slug=hospital_slug)
         return queryset
@@ -89,7 +101,7 @@ class CommentRankBaseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer: ModelSerializer) -> None:
         """Save serializer."""
-        path = self.request.get_full_path()
+        path: str = self.request.get_full_path()
         if '/services/' in path:
             serializer.save(author=self.request.user,
                             service=self.get_service())
@@ -105,7 +117,7 @@ class CommentViewSet(CommentRankBaseViewSet):
 
     def get_queryset(self) -> QuerySet:
         """Get queryset for viewset."""
-        path = self.request.get_full_path()
+        path: str = self.request.get_full_path()
         if '/services/' in path:
             return self.get_service().service_comment.all()
         if '/hospitals/' in path:
@@ -119,7 +131,7 @@ class RankViewSet(CommentRankBaseViewSet):
 
     def get_queryset(self) -> QuerySet:
         """Get queryset for viewset."""
-        path = self.request.get_full_path()
+        path: str = self.request.get_full_path()
         if '/services/' in path:
             return self.get_service().service_rank.all()
         if '/hospitals/' in path:
@@ -127,7 +139,7 @@ class RankViewSet(CommentRankBaseViewSet):
 
     def perform_create(self, serializer: ModelSerializer) -> None:
         """Save serializer."""
-        path = self.request.get_full_path()
+        path: str = self.request.get_full_path()
         # Start Validation
         try:
             if '/services/' in path:
