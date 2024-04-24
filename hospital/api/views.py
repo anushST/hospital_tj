@@ -26,7 +26,12 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class HospitalServiceBaseViewSet(viewsets.ReadOnlyModelViewSet):
-    """Hospital and Service base viewset."""
+    """Hospital and Service base viewset.
+
+    ---
+    parameters:
+        category: int
+    """
 
     def get_queryset(self) -> QuerySet:
         """Get queryset for viewset.
